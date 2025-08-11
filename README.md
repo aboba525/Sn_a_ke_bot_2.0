@@ -1,17 +1,31 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>🚀 Космическая змейка</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body {
       margin: 0;
       padding: 10px;
       text-align: center;
-      font-family: 'Arial', sans-serif;
+      font-family: Arial, sans-serif;
       background: #000;
       color: #0f0;
       touch-action: manipulation;
+    }
+    h1 {
+      color: #0f0;
+      font-size: 24px;
+      margin: 10px 0;
+    }
+    #score, #best {
+      font-size: 20px;
+      font-weight: bold;
+      margin: 5px 0;
+    }
+    #best {
+      color: gold;
     }
     canvas {
       background: #000;
@@ -19,15 +33,8 @@
       image-rendering: pixelated;
       display: block;
       margin: 20px auto;
-    }
-    #score {
-      font-size: 24px;
-      font-weight: bold;
-      color: #0f0;
-    }
-    #best {
-      font-size: 18px;
-      color: gold;
+      width: 300px;
+      height: 300px;
     }
     .controls {
       display: grid;
@@ -41,8 +48,8 @@
       background: #0066cc;
       color: white;
       border: none;
-      padding: 24px; /* Увеличено для Android */
-      font-size: 24px; /* Увеличено для Android */
+      padding: 24px;
+      font-size: 24px;
       border-radius: 10px;
       cursor: pointer;
     }
@@ -76,13 +83,15 @@
   <button id="restart-btn" onclick="restart()">Начать заново</button>
 
   <script>
-    // Telegram WebApp
+    // Безопасное подключение к Telegram
     const tg = window.Telegram?.WebApp;
     if (tg) {
       try {
         tg.ready();
         tg.expand();
-      } catch (e) {}
+      } catch (e) {
+        console.warn("Telegram WebApp недоступен", e);
+      }
     }
 
     // Элементы
@@ -98,12 +107,12 @@
 
     // Звёзды
     const stars = [];
-    for (let i = 0; i < 20; i++) { // Уменьшено для Android
+    for (let i = 0; i < 20; i++) {
       stars.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        r: Math.random() * 1.5,
-        a: Math.random()
+        r: Math.random() * 1.5 + 0.5,
+        a: Math.random() * 0.8 + 0.2
       });
     }
 
@@ -115,7 +124,7 @@
       { emoji: "🍓", points: 12, weight: 7 },
       { emoji: "🥝", points: 10, weight: 8 },
       { emoji: "🍇", points: 14, weight: 6 },
-      { emoji: "🍊", points: 111, weight: 7 },
+      { emoji: "🍊", points: 11, weight: 7 },
       { emoji: "🍉", points: 25, weight: 3 },
       { emoji: "🍈", points: 22, weight: 3 },
       { emoji: "🥑", points: 35, weight: 2 },
@@ -125,22 +134,24 @@
     // Состояние
     let snake = [{ x: 10, y: 10 }];
     let snakePos = { x: 10 * gridSize, y: 10 * gridSize };
-    let dx = 1, dy = 0; // Начальное направление — вправо
+    let dx = 1, dy = 0;
     let nextDx = 1, nextDy = 0;
     let score = 0;
     let bestScore = 0;
     let food = null;
     let gameRunning = false;
     let gameStarted = false;
-    let gameInterval;
+    let gameInterval = null;
     let popups = [];
     let eatEffects = [];
     let celebration = null;
 
-    // Рекорд
+    // Загрузка рекорда
     try {
       bestScore = parseInt(localStorage.getItem("spaceSnakeBest")) || 0;
-    } catch (e) {}
+    } catch (e) {
+      console.warn("localStorage недоступен", e);
+    }
     if (bestDisplay) bestDisplay.textContent = `Рекорд: ${bestScore}`;
 
     // Всплывающие очки
@@ -157,7 +168,7 @@
 
     // Эффект поедания
     function addEatEffect(x, y) {
-      for (let i = 0; i < 5; i++) { // Уменьшено для Android
+      for (let i = 0; i < 5; i++) {
         eatEffects.push({
           x: x * gridSize + gridSize / 2,
           y: y * gridSize + gridSize / 2,
@@ -186,63 +197,24 @@
       return FRUITS[0];
     }
 
-    // Анимация старта
-    function showStartAnimation() {
-      let step = 0;
-      const texts = ["включаем двигатели...", "выход в эфир...", "змейка-корабль, старт!"];
-      const anim = setInterval(() => {
-        drawSpace();
-        ctx.fillStyle = "rgba(0,0,0,0.7)";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        ctx.fillStyle = "#00ff00";
-        ctx.font = "20px Arial";
-        const title = "🚀 КОСМОС";
-        const titleWidth = ctx.measureText(title).width;
-        ctx.fillText(title, (canvas.width - titleWidth) / 2, 120);
-        
-        ctx.fillStyle = "white";
-        ctx.font = "16px Arial";
-        const subtitle = texts[step % 3];
-        const subWidth = ctx.measureText(subtitle).width;
-        ctx.fillText(subtitle, (canvas.width - subWidth) / 2, 150);
-        
-        step++;
-        if (step > 12) {
-          clearInterval(anim);
-          draw();
-          showHint();
-        }
-      }, 250);
-    }
-
-    function showHint() {
-      ctx.fillStyle = "rgba(0,0,0,0.5)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "white";
-      ctx.font = "18px Arial";
-      const t1 = "Нажми стрелку";
-      const t2 = "для старта";
-      ctx.fillText(t1, (canvas.width - ctx.measureText(t1).width) / 2, 140);
-      ctx.fillText(t2, (canvas.width - ctx.measureText(t2).width) / 2, 170);
-    }
-
+    // Размещение еды
     function placeFood() {
       food = getRandomFruit();
       food.gridX = Math.floor(Math.random() * tileCount);
       food.gridY = Math.floor(Math.random() * tileCount);
-      
+
       for (let part of snake) {
         if (part.x === food.gridX && part.y === food.gridY) {
           placeFood();
+          return;
         }
       }
     }
 
+    // Фон с звёздами
     function drawSpace() {
       ctx.fillStyle = "black";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
       stars.forEach(s => {
         ctx.fillStyle = `rgba(255, 255, 255, ${s.a})`;
         ctx.beginPath();
@@ -251,10 +223,11 @@
       });
     }
 
+    // Основная отрисовка
     function draw() {
       drawSpace();
 
-      // Змейка — круглая
+      // Змейка
       for (let i = 0; i < snake.length; i++) {
         const part = snake[i];
         const x = part.x * gridSize;
@@ -265,6 +238,7 @@
         ctx.arc(x + gridSize/2, y + gridSize/2, gridSize/2 - 1, 0, Math.PI * 2);
         ctx.fill();
 
+        // Глаза
         if (i === 0) {
           ctx.fillStyle = "white";
           const eyeSize = 2;
@@ -333,7 +307,7 @@
         gameInterval = setInterval(gameLoop, 80);
       }
 
-      // Блокируем разворот
+      // Блокировка разворота
       if (x === 1 && dx === -1) return;
       if (x === -1 && dx === 1) return;
       if (y === 1 && dy === -1) return;
@@ -343,32 +317,15 @@
       nextDy = y;
     }
 
-    // Управление клавиатурой (для тестирования)
-    window.addEventListener("keydown", (e) => {
-      switch (e.key) {
-        case "ArrowLeft":
-        case "a":
-        case "A":
-          setDir(-1, 0); // Влево
-          break;
-        case "ArrowRight":
-        case "d":
-        case "D":
-          setDir(1, 0); // Вправо
-          break;
-        case "ArrowUp":
-        case "w":
-        case "W":
-          setDir(0, -1); // Вверх
-          break;
-        case "ArrowDown":
-        case "s":
-        case "S":
-          setDir(0, 1); // Вниз
-          break;
-      }
+    // Управление с клавиатуры
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft") setDir(-1, 0);
+      if (e.key === "ArrowRight") setDir(1, 0);
+      if (e.key === "ArrowUp") setDir(0, -1);
+      if (e.key === "ArrowDown") setDir(0, 1);
     });
 
+    // Основной цикл
     function gameLoop() {
       if (!gameRunning) return;
 
@@ -378,10 +335,11 @@
         dy = nextDy;
       }
 
+      // Двигаем позицию
       snakePos.x += dx * moveSpeed;
       snakePos.y += dy * moveSpeed;
 
-      // Проверяем движение по X или Y
+      // Проверка перехода на новую клетку
       if (
         Math.abs(snakePos.x - snake[0].x * gridSize) >= gridSize ||
         Math.abs(snakePos.y - snake[0].y * gridSize) >= gridSize
@@ -406,7 +364,7 @@
         snakePos.x = head.x * gridSize;
         snakePos.y = head.y * gridSize;
 
-        // Еда
+        // Проверка еды
         if (head.x === food.gridX && head.y === food.gridY) {
           const points = food.points;
           score += points;
@@ -414,10 +372,7 @@
           addPopup(head.x, head.y, `+${points}`, points > 20 ? "yellow" : "green");
           addEatEffect(head.x, head.y);
           placeFood();
-
-          if (score % 100 === 0 && score <= 1000) {
-            startCelebration();
-          }
+          if (score % 100 === 0 && score <= 1000) startCelebration();
         } else {
           snake.pop();
         }
@@ -426,6 +381,7 @@
       draw();
     }
 
+    // Конец игры
     function gameOver() {
       gameRunning = false;
       clearInterval(gameInterval);
@@ -433,8 +389,8 @@
         if (score > bestScore) {
           bestScore = score;
           localStorage.setItem("spaceSnakeBest", bestScore);
+          if (bestDisplay) bestDisplay.textContent = `Рекорд: ${bestScore} 🌟`;
         }
-        if (bestDisplay) bestDisplay.textContent = `Рекорд: ${bestScore} 🌟`;
       } catch (e) {}
 
       drawSpace();
@@ -451,6 +407,7 @@
       ctx.fillText(`Очки: ${score}`, (canvas.width - ctx.measureText(`Очки: ${score}`).width) / 2, 210);
     }
 
+    // Перезапуск
     function restart() {
       clearInterval(gameInterval);
       snake = [{ x: 10, y: 10 }];
@@ -469,6 +426,47 @@
       showStartAnimation();
     }
 
+    // Анимация старта
+    function showStartAnimation() {
+      let step = 0;
+      const texts = ["включаем двигатели...", "выход в эфир...", "змейка-корабль, старт!"];
+      const anim = setInterval(() => {
+        drawSpace();
+        ctx.fillStyle = "rgba(0,0,0,0.7)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "#00ff00";
+        ctx.font = "20px Arial";
+        const title = "🚀 КОСМОС";
+        const tw = ctx.measureText(title).width;
+        ctx.fillText(title, (canvas.width - tw) / 2, 120);
+
+        ctx.fillStyle = "white";
+        ctx.font = "16px Arial";
+        const text = texts[step % 3];
+        const w = ctx.measureText(text).width;
+        ctx.fillText(text, (canvas.width - w) / 2, 150);
+
+        step++;
+        if (step > 12) {
+          clearInterval(anim);
+          draw();
+          showHint();
+        }
+      }, 250);
+    }
+
+    function showHint() {
+      ctx.fillStyle = "rgba(0,0,0,0.5)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "white";
+      ctx.font = "18px Arial";
+      const t1 = "Нажми стрелку";
+      const t2 = "для старта";
+      ctx.fillText(t1, (canvas.width - ctx.measureText(t1).width) / 2, 140);
+      ctx.fillText(t2, (canvas.width - ctx.measureText(t2).width) / 2, 170);
+    }
+
     // Старт
     window.addEventListener('load', () => {
       try {
@@ -476,7 +474,7 @@
         draw();
         showStartAnimation();
       } catch (e) {
-        console.error("Ошибка:", e);
+        console.error("Ошибка при загрузке:", e);
         alert("Ошибка: " + e.message);
       }
     });
