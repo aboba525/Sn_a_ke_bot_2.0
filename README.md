@@ -115,7 +115,7 @@
       { emoji: "🍓", points: 12, weight: 7 },
       { emoji: "🥝", points: 10, weight: 8 },
       { emoji: "🍇", points: 14, weight: 6 },
-      { emoji: "🍊", points: 11, weight: 7 },
+      { emoji: "🍊", points: 111, weight: 7 },
       { emoji: "🍉", points: 25, weight: 3 },
       { emoji: "🍈", points: 22, weight: 3 },
       { emoji: "🥑", points: 35, weight: 2 },
